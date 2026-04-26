@@ -1,8 +1,8 @@
 // reviews.js — полная версия с Supabase, режимом разработчика, удалением отзывов
 
 // ========== НАСТРОЙКИ SUPABASE (заполняются через GitHub Secrets) ==========
-window.SUPABASE_URL = '';
-window.SUPABASE_ANON_KEY = '';
+window.SUPABASE_URL = 'https://ewmfkxcdguaopinwqrvp.supabase.co';
+window.SUPABASE_ANON_KEY = 'sb_publishable_Tyn0nXY3Qw2iKgVk8FnVKw_MdsNCDL3';
 
 // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
 let devMode = false;
