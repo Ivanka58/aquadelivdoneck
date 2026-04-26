@@ -798,3 +798,26 @@ body {
         font-size: 28px;
     }
 }
+
+.review-menu-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0 4px;
+    border-radius: 8px;
+}
+.review-menu-btn:hover {
+    background: #f0f0f0;
+    color: #ef4444;
+}
+.review-menu-dropdown {
+    display: none;
+}
+.review-menu-delete {
+    transition: 0.1s;
+}
+.review-menu-delete:hover {
+    background: #fee2e2 !important;
+}
