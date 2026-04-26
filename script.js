@@ -108,21 +108,28 @@ const vkCargoBtn = document.getElementById('vkCargoTempBtn');
 if (vkBtn) vkBtn.addEventListener('click', () => alert('Скоро появится! Следите за обновлениями'));
 if (vkCargoBtn) vkCargoBtn.addEventListener('click', () => alert('Скоро появится! Следите за обновлениями'));
 
-// === FAQ аккордеон (раскрытие ответов) ===
+// === FAQ аккордеон ===
 document.querySelectorAll('.faq-question').forEach(question => {
     question.addEventListener('click', () => {
         const item = question.closest('.faq-item');
         if (!item) return;
         const isOpen = item.classList.contains('open');
-        // Закрываем все
         document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-        if (!isOpen) {
-            item.classList.add('open');
-        }
+        if (!isOpen) item.classList.add('open');
     });
 });
 
-// === Анимация печати для сообщения техподдержки ===
+// === Поддержка: кружок справа внизу ===
+let supportCircle = document.getElementById('supportCircle');
+if (!supportCircle) {
+    const div = document.createElement('div');
+    div.id = 'supportCircle';
+    div.className = 'support-circle';
+    div.innerHTML = `<div class="support-bubble" id="supportBubble"></div><div class="support-icon">🎧</div>`;
+    document.body.appendChild(div);
+    supportCircle = document.getElementById('supportCircle');
+}
+
 const supportMessage = "Возникли вопросы с работой сайта? Обратитесь в поддержку.";
 let supportPrinted = false;
 
@@ -141,20 +148,6 @@ function typeSupportMessage() {
     type();
 }
 
-// === Кружок поддержки (появляется при скролле) ===
-let supportCircle = document.getElementById('supportCircle');
-if (!supportCircle) {
-    const div = document.createElement('div');
-    div.id = 'supportCircle';
-    div.className = 'support-circle';
-    div.innerHTML = `<div class="support-bubble" id="supportBubble"></div><div class="support-icon">🎧</div>`;
-    document.body.appendChild(div);
-    supportCircle = document.getElementById('supportCircle');
-}
-
-const supportBubble = document.getElementById('supportBubble');
-let bubbleVisible = false;
-
 window.addEventListener('scroll', () => {
     if (!supportCircle) return;
     const scrollY = window.scrollY;
@@ -162,7 +155,7 @@ window.addEventListener('scroll', () => {
     if (scrollY > docHeight * 0.7) {
         if (supportCircle.style.display !== 'block') {
             supportCircle.style.display = 'block';
-            if (!supportPrinted && supportBubble) {
+            if (!supportPrinted) {
                 typeSupportMessage();
                 supportPrinted = true;
             }
@@ -178,7 +171,7 @@ if (supportCircle) {
     });
 }
 
-// === Добавляем стили для кружка (на всякий случай, если их нет в CSS) ===
+// === Добавляем стили для кружка ===
 if (!document.querySelector('#supportCircleStyle')) {
     const style = document.createElement('style');
     style.id = 'supportCircleStyle';
@@ -219,231 +212,3 @@ if (!document.querySelector('#supportCircleStyle')) {
     `;
     document.head.appendChild(style);
 }
-
-// === Отзывы: работа с Supabase ===
-let currentReviews = [];
-
-// Загрузка отзывов из базы
-async function loadReviews() {
-    const container = document.getElementById('reviewsList');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="reviews-loading">Загрузка отзывов...</div>';
-    
-    try {
-        const reviews = await window.ReviewsAPI.fetchReviews();
-        currentReviews = reviews;
-        renderReviews(reviews);
-    } catch (e) {
-        console.error('Ошибка загрузки отзывов:', e);
-        container.innerHTML = '<div class="reviews-loading">Не удалось загрузить отзывы</div>';
-    }
-}
-
-// Отображение отзывов
-function renderReviews(reviews) {
-    const container = document.getElementById('reviewsList');
-    if (!container) return;
-    
-    if (!reviews || reviews.length === 0) {
-        container.innerHTML = '<div class="reviews-loading">Пока нет отзывов. Будьте первым!</div>';
-        return;
-    }
-    
-    container.innerHTML = reviews.map(review => {
-        const isOwner = review.user_ip === window.ReviewsAPI.currentUserIP;
-        const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
-        const date = new Date(review.created_at).toLocaleDateString('ru-RU');
-        
-        return `
-            <div class="review-card" data-id="${review.id}">
-                <div class="review-header">
-                    <span class="review-name">${escapeHtml(review.username)}</span>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="review-stars">${stars}</span>
-                        <span class="review-date">${date}</span>
-                        ${isOwner ? `
-                        <div class="review-menu">
-                            <button class="review-menu-btn" onclick="toggleReviewMenu(this)">⋯</button>
-                            <div class="review-menu-dropdown">
-                                <button class="review-menu-delete" onclick="deleteReview(${review.id})">🗑️ Удалить</button>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-                ${review.comment ? `<div class="review-comment">${escapeHtml(review.comment)}</div>` : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-// Удаление отзыва
-window.deleteReview = async (id) => {
-    const confirmed = confirm('Вы уверены, что хотите удалить свой отзыв?');
-    if (!confirmed) return;
-    
-    const result = await window.ReviewsAPI.deleteReview(id);
-    if (result.success) {
-        await loadReviews();
-        showToast('Отзыв удалён', 'success');
-    } else {
-        showToast(result.error || 'Ошибка удаления', 'error');
-    }
-};
-
-// Переключение меню трёх точек
-window.toggleReviewMenu = (btn) => {
-    const dropdown = btn.nextElementSibling;
-    document.querySelectorAll('.review-menu-dropdown').forEach(d => {
-        if (d !== dropdown) d.classList.remove('show');
-    });
-    dropdown.classList.toggle('show');
-};
-
-// Закрываем меню при клике вне
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.review-menu')) {
-        document.querySelectorAll('.review-menu-dropdown').forEach(d => d.classList.remove('show'));
-    }
-});
-
-// Экранирование HTML для безопасности
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
-
-// Уведомление (тост)
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: ${type === 'success' ? '#27ae60' : '#e74c3c'};
-        color: white;
-        padding: 12px 24px;
-        border-radius: 50px;
-        z-index: 1000;
-        font-weight: 600;
-        animation: fadeInUp 0.3s ease;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-// === Настройка формы отзыва ===
-function setupReviewForm() {
-    const form = document.getElementById('reviewForm');
-    if (!form) return;
-    
-    // Звёздный рейтинг
-    let selectedRating = 0;
-    const stars = document.querySelectorAll('.star-rating span');
-    const ratingError = document.getElementById('ratingError');
-    const nameInput = document.getElementById('reviewName');
-    const nameError = document.getElementById('nameError');
-    
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
-            selectedRating = parseInt(star.dataset.value);
-            stars.forEach((s, i) => {
-                if (i < selectedRating) {
-                    s.textContent = '★';
-                    s.classList.add('active');
-                } else {
-                    s.textContent = '☆';
-                    s.classList.remove('active');
-                }
-            });
-            if (ratingError) ratingError.classList.remove('show');
-            star.closest('.form-group')?.querySelector('.form-input')?.classList.remove('error');
-        });
-        
-        star.addEventListener('mouseenter', () => {
-            const val = parseInt(star.dataset.value);
-            stars.forEach((s, i) => {
-                s.textContent = i < val ? '★' : '☆';
-            });
-        });
-        
-        star.addEventListener('mouseleave', () => {
-            stars.forEach((s, i) => {
-                s.textContent = i < selectedRating ? '★' : '☆';
-            });
-        });
-    });
-    
-    // Валидация и отправка
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        let isValid = true;
-        
-        // Проверка имени
-        const name = nameInput.value.trim();
-        if (!name) {
-            nameError.classList.add('show');
-            nameInput.classList.add('error');
-            isValid = false;
-        } else {
-            nameError.classList.remove('show');
-            nameInput.classList.remove('error');
-        }
-        
-        // Проверка рейтинга
-        if (selectedRating === 0) {
-            ratingError.classList.add('show');
-            isValid = false;
-        } else {
-            ratingError.classList.remove('show');
-        }
-        
-        if (!isValid) return;
-        
-        const comment = document.getElementById('reviewComment').value;
-        
-        const result = await window.ReviewsAPI.addReview(name, selectedRating, comment);
-        
-        if (result.success) {
-            form.reset();
-            selectedRating = 0;
-            stars.forEach(s => {
-                s.textContent = '☆';
-                s.classList.remove('active');
-            });
-            showToast('Спасибо за отзыв!', 'success');
-            await loadReviews();
-        } else {
-            showToast('Ошибка: ' + result.error, 'error');
-        }
-    });
-}
-
-// === Инициализация при загрузке страницы ===
-document.addEventListener('DOMContentLoaded', async () => {
-    // Ждём, пока Supabase загрузится
-    if (typeof window.supabase !== 'undefined') {
-        // Эти значения будут подставлены через GitHub Secrets
-        const SUPABASE_URL = window.SUPABASE_URL || '';
-        const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
-        
-        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-            const initialized = await window.ReviewsAPI.init(SUPABASE_URL, SUPABASE_ANON_KEY);
-            if (initialized) {
-                setupReviewForm();
-                await loadReviews();
-            }
-        } else {
-            console.error('Supabase настройки не найдены');
-        }
-    }
-});
