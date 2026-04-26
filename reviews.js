@@ -1,6 +1,5 @@
 // reviews.js — Supabase + режим разработчика (Ctrl+Z+I)
-// Ключи подставляются через GitHub Actions из Secrets
-
+// ========== НАСТРОЙКИ SUPABASE (заполняются через GitHub Secrets) ==========
 window.SUPABASE_URL = 'https://ewmfkxcdguaopinwqrvp.supabase.co';
 window.SUPABASE_ANON_KEY = 'sb_publishable_Tyn0nXY3Qw2iKgVk8FnVKw_MdsNCDL3';
 
